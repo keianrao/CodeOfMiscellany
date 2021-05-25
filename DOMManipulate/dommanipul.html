@@ -1,0 +1,139 @@
+<!DOCTYPE HTML>
+<HTML>
+
+    <META CHARSET="UTF-8" />
+
+    <BODY>
+        <!-- (empty) -->
+    </BODY>
+
+    <SCRIPT>
+        // Let's create a standard tree.
+
+        function byId(id) {
+            return document.getElementById(id);
+        }
+
+        function addLast(parent, child) {
+            parent.appendChild(child);
+        }
+
+        var tree = {
+            value: 4,
+            children: [
+                {
+                    value: 2,
+                    children: [
+                        { value: 1, children: [] },
+                        { value: 3, children: [] }
+                    ]
+                },
+                {
+                    value: 6,
+                    children: [
+                        { value: 7, children: [] }
+                    ]
+                }
+            ]
+        };
+        // Still a visually confusing way to define a tree.
+
+        function toString(tree) {
+            if (!(tree instanceof Object)) return `${tree}`;
+
+            /*
+            4
+            - 2
+              - 1
+              - 3
+            - 6
+              - 7
+            */
+
+            function subtreeToString(subtree) {
+
+                // First, generate our own string.
+                var rootString = `${subtree.value}`;
+
+                // Then, we'll collect all the childrens' strings.
+                var childrenStrings = [];
+                for (var child of subtree.children) {
+
+                    var childString = subtreeToString(child);
+
+                    // Now, it will give one line, then possibly more.
+                    // We want to indent only the additional lines.
+                    // Conveniently..
+                    childString = childString.replaceAll(/\n/g, "\n  ");
+
+                    // Also, prepend the first line with the bullet.
+                    childString = childString.replace(/^/, "- ");
+
+                    childrenStrings.push(childString);
+                }
+
+                // Merge the strings, I suppose.
+                childrenStrings = childrenStrings.map(
+                    function (childString) {
+                        return childString.replace(/^/, "\n");
+                    }
+                );
+                return rootString.concat(...childrenStrings);
+            }
+
+            return subtreeToString(tree);
+        }
+
+        function mapTree(afunc, tree) {
+            for (var child of tree.children) mapTree(afunc, child);
+            tree.value = afunc(tree);
+        }
+
+        function createParagraphElement(node) {
+            var element = document.createElement("p");
+            element.textContent = toString(node);
+            return element;
+        }
+
+        function deepCopyTree(tree) {
+            if (!(tree instanceof Object)) return tree;
+            // Wasn't a tree, was passed a plainer value.
+
+            var copy = Array.isArray(tree) ? [] : {};
+
+            for (var [key, value] of Object.entries(tree)) {
+                copy[key] = deepCopyTree(value);
+            }
+            return copy;
+        }
+
+        var addends = deepCopyTree(tree);
+        mapTree(createParagraphElement, addends);
+        console.log(addends);
+        mapTree(
+            function (paragraphElementNode) {
+                for (var child of paragraphElementNode.children) {
+                    addLast(paragraphElementNode.value, child);
+                }
+                return paragraphElementNode;
+            },
+            addends
+        );
+        addLast(document.body, addends.value);
+
+        /*
+
+        This is where I abandon ship.
+
+        I do not know why this creates an infinite recursive object
+        (or how that's even possible). I suppose I'm not very used to
+        interpreted languages.
+
+        I didn't plan my methods out so it's a jumble, perhaps if I
+        looked carefully into them I'd find the bug. But.. I may not.
+
+        */
+
+    </SCRIPT>
+
+</HTML>
